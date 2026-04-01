@@ -1,6 +1,8 @@
 const express = require('express');
 const Order = require('../models/Order');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
+const { sendOrderConfirmation, sendNewOrderNotification } = require('../services/email');
 
 const router = express.Router();
 
@@ -33,6 +35,15 @@ router.post('/', auth, async (req, res) => {
     });
 
     await order.save();
+    
+    // 取得會員 email
+    const user = await User.findById(req.userId);
+    
+    // 發送 Email（非同步，不影響回應速度）
+    if (user && user.email) {
+      sendOrderConfirmation(order, user.email).catch(err => console.error('發送顧客確認信失敗:', err));
+      sendNewOrderNotification(order).catch(err => console.error('發送管理員通知失敗:', err));
+    }
     
     res.status(201).json({
       message: '訂單建立成功',
