@@ -5,6 +5,57 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'tonywu1967@gmail.com';
+const APP_URL = process.env.APP_URL || 'https://shopping.zeabur.app';
+
+// Send verification email
+async function sendVerificationEmail(user, token) {
+  if (!process.env.RESEND_API_KEY) {
+    console.log('⚠️ RESEND_API_KEY 未設定，略過發送驗證信');
+    return false;
+  }
+
+  const verifyUrl = `${APP_URL}/verify-email.html?token=${token}`;
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: user.email,
+      subject: '【CHIC】驗證您的 Email 帳戶',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #1a1a1a; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0; letter-spacing: 5px;">CHIC</h1>
+          </div>
+          <div style="padding: 30px;">
+            <h2 style="color: #333;">親愛的 ${user.name} 您好，</h2>
+            <p>感謝您註冊 CHIC 時尚購物！</p>
+            <p>請點擊以下按鈕驗證您的 Email 帳戶：</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verifyUrl}" style="display: inline-block; padding: 15px 40px; background: #c9a96e; color: white; text-decoration: none; border-radius: 5px; font-size: 16px;">驗證 Email</a>
+            </div>
+            
+            <p style="color: #666; font-size: 13px;">或者複製以下連結到瀏覽器開啟：</p>
+            <p style="background: #f5f5f5; padding: 10px; border-radius: 5px; word-break: break-all; font-size: 12px;">${verifyUrl}</p>
+            
+            <p style="margin-top: 30px; color: #999; font-size: 12px;">此驗證連結將在 24 小時後失效。</p>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              CHIC 時尚購物 © 2026
+            </p>
+          </div>
+        </div>
+      `
+    });
+    console.log('✅ 驗證信已發送至:', user.email);
+    return true;
+  } catch (error) {
+    console.error('❌ 發送驗證信失敗:', error?.message);
+    return false;
+  }
+}
 
 // Send order confirmation to customer
 async function sendOrderConfirmation(order, customerEmail) {
@@ -150,5 +201,6 @@ async function sendNewOrderNotification(order) {
 
 module.exports = {
   sendOrderConfirmation,
-  sendNewOrderNotification
+  sendNewOrderNotification,
+  sendVerificationEmail
 };
